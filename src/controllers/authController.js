@@ -12,8 +12,9 @@ const signToken = id => {
 const createSendToken = (user, statusCode, res) => {
   const token = signToken(user._id);
 
-  // Remove password from output
+  // Remove sensitive fields from output
   user.password = undefined;
+  user.companyCode = undefined;
 
   res.status(statusCode).json({
     status: 'success',
@@ -25,33 +26,47 @@ const createSendToken = (user, statusCode, res) => {
 };
 
 exports.register = catchAsync(async (req, res, next) => {
+  const { name, email, password, role, companyCode, companyName } = req.body;
+
+  if (!companyCode) {
+    return next(new AppError('Please provide a company code!', 400));
+  }
+  if (!companyName) {
+    return next(new AppError('Please provide a company name!', 400));
+  }
+
   const newUser = await User.create({
-    name: req.body.name,
-    email: req.body.email,
-    password: req.body.password,
-    role: req.body.role // In production, we might want to restrict this
+    name,
+    email,
+    password,
+    role: role || 'Viewer',
+    companyCode: companyCode.toUpperCase().trim(),
+    companyName: companyName.trim()
   });
 
   createSendToken(newUser, 201, res);
 });
 
 exports.login = catchAsync(async (req, res, next) => {
-  const { email, password } = req.body;
+  const { email, password, companyName } = req.body;
 
-  // 1) Check if email and password exist
-  if (!email || !password) {
-    return next(new AppError('Please provide email and password!', 400));
+  // 1) Check if email, password, and companyName exist
+  if (!email || !password || !companyName) {
+    return next(new AppError('Please provide company name, email and password!', 400));
   }
 
-  // 2) Check if user exists & password is correct
-  const user = await User.findOne({ email }).select('+password');
+  // 2) Check if user exists & password is correct (match by email + companyName)
+  const user = await User.findOne({
+    email,
+    companyName: companyName.trim()
+  }).select('+password +isActive');
 
   if (!user || !(await user.correctPassword(password, user.password))) {
-    return next(new AppError('Incorrect email or password', 401));
+    return next(new AppError('Incorrect company name, email or password', 401));
   }
-  
+
   if (!user.isActive) {
-      return next(new AppError('User is deactivated. Contact an administrator.', 403));
+    return next(new AppError('User is deactivated. Contact an administrator.', 403));
   }
 
   // 3) If everything ok, send token to client

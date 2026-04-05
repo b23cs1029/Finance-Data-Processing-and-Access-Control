@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zorvyn Finance Dashboard</title>
+    <meta name="description" content="Zorvyn Finance — Secure company finance dashboard with role-based access control, transaction management, and analytics.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+    <!-- Toast Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- ============ AUTH PAGE ============ -->
+    <div id="auth-container" class="auth-wrapper">
+        <div class="glass-card auth-box">
+            <h1 class="logo-text">Zorvyn Finance</h1>
+            <p class="logo-subtitle">Secure Company Finance Portal</p>
+
+            <div class="auth-tabs">
+                <button id="tab-login" class="tab active" onclick="switchAuthTab('login')">Sign In</button>
+                <button id="tab-register" class="tab" onclick="switchAuthTab('register')">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" id="login-company" required placeholder="e.g. Zorvyn Technologies" autocomplete="organization">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="login-email" required placeholder="name@company.com" autocomplete="email">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" required placeholder="••••••••" autocomplete="current-password">
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Sign In</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="register-form" class="hidden">
+                <div class="form-group">
+                    <label>Company Name</label>
+                    <input type="text" id="reg-company-name" required placeholder="e.g. Zorvyn Technologies">
+                </div>
+                <div class="form-group">
+                    <label>Company Code <span style="font-size:10px; color:var(--text-muted)">(Secret — from your manager)</span></label>
+                    <input type="text" id="reg-company-code" required placeholder="e.g. ZORV-2026">
+                </div>
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="reg-name" required placeholder="John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="reg-email" required placeholder="name@company.com">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="reg-password" required minlength="6" placeholder="Min. 6 characters">
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select id="reg-role">
+                        <option value="Admin">Admin — Full Access</option>
+                        <option value="Analyst">Analyst — View & Analyze</option>
+                        <option value="Viewer">Viewer — Dashboard Only</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary w-100">Create Account</button>
+            </form>
+
+            <div id="auth-error" class="error-text"></div>
+        </div>
+    </div>
+
+    <!-- ============ MAIN APP LAYOUT ============ -->
+    <div id="app-layout" class="app-layout hidden">
+
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="sidebar-brand">Zorvyn</div>
+                <div class="sidebar-company" id="sidebar-company">COMPANY</div>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="nav-item active" data-page="dashboard" onclick="navigateTo('dashboard')">
+                    <span class="nav-icon">📊</span>
+                    <span>Dashboard</span>
+                </button>
+                <button class="nav-item" data-page="records" id="nav-records" onclick="navigateTo('records')">
+                    <span class="nav-icon">📋</span>
+                    <span>Records</span>
+                </button>
+                <button class="nav-item" data-page="users" id="nav-users" onclick="navigateTo('users')">
+                    <span class="nav-icon">👥</span>
+                    <span>Users</span>
+                </button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <div class="user-details">
+                        <div class="user-name" id="user-name">User</div>
+                        <div class="user-role" id="user-role">Role</div>
+                    </div>
+                </div>
+                <button class="btn btn-outline w-100 btn-sm" onclick="logout()">
+                    <span>🚪</span> <span>Log Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+
+            <!-- ====== DASHBOARD PAGE ====== -->
+            <div id="page-dashboard" class="page-content">
+                <div class="top-bar">
+                    <div class="top-bar-left">
+                        <h1>Dashboard</h1>
+                        <p id="greeting-text">Welcome back</p>
+                    </div>
+                    <span class="role-badge" id="header-role-badge">Admin</span>
+                </div>
+
+                <!-- Metric Cards -->
+                <div class="metrics-row">
+                    <div class="glass-card metric-card">
+                        <div class="metric-icon income">↑</div>
+                        <div class="metric-info">
+                            <p>Total Income</p>
+                            <h3 id="stat-income">$0.00</h3>
+                        </div>
+                    </div>
+                    <div class="glass-card metric-card">
+                        <div class="metric-icon expense">↓</div>
+                        <div class="metric-info">
+                            <p>Total Expenses</p>
+                            <h3 id="stat-expense">$0.00</h3>
+                        </div>
+                    </div>
+                    <div class="glass-card metric-card">
+                        <div class="metric-icon balance">⚖</div>
+                        <div class="metric-info">
+                            <p>Net Balance</p>
+                            <h3 id="stat-balance">$0.00</h3>
+                        </div>
+                    </div>
+                    <div class="glass-card metric-card">
+                        <div class="metric-icon records">📄</div>
+                        <div class="metric-info">
+                            <p>Total Records</p>
+                            <h3 id="stat-records">0</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="charts-row">
+                    <div class="glass-card chart-card">
+                        <h4>Monthly Trends (Last 6 Months)</h4>
+                        <div class="chart-container">
+                            <canvas id="trends-chart"></canvas>
+                        </div>
+                    </div>
+                    <div class="glass-card chart-card">
+                        <h4>Expense Categories</h4>
+                        <div class="chart-container">
+                            <canvas id="category-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="glass-card activity-section">
+                    <h4>Recent Activity</h4>
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Category</th>
+                                    <th>Notes</th>
+                                    <th class="text-right">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activity-tbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ====== RECORDS PAGE ====== -->
+            <div id="page-records" class="page-content hidden">
+                <div class="page-header">
+                    <h1 class="page-title" style="margin-bottom:0">Financial Records</h1>
+                    <button class="btn btn-primary" id="btn-add-record" onclick="openRecordModal()">
+                        + New Record
+                    </button>
+                </div>
+
+                <!-- Filters -->
+                <div class="glass-card" style="margin-bottom: 20px; padding: 16px 20px;">
+                    <div class="filter-bar">
+                        <div class="form-group">
+                            <label>Type</label>
+                            <select id="filter-type" onchange="loadRecords()">
+                                <option value="">All Types</option>
+                                <option value="income">Income</option>
+                                <option value="expense">Expense</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <input type="text" id="filter-category" placeholder="Search category..." oninput="debounceLoadRecords()">
+                        </div>
+                        <div class="form-group">
+                            <label>From</label>
+                            <input type="date" id="filter-from" onchange="loadRecords()">
+                        </div>
+                        <div class="form-group">
+                            <label>To</label>
+                            <input type="date" id="filter-to" onchange="loadRecords()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Records Table -->
+                <div class="glass-card">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Type</th>
+                                    <th>Category</th>
+                                    <th>Notes</th>
+                                    <th>Created By</th>
+                                    <th class="text-right">Amount</th>
+                                    <th id="records-actions-th" class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="records-tbody">
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="pagination" id="records-pagination"></div>
+                </div>
+            </div>
+
+            <!-- ====== USERS PAGE (Admin Only) ====== -->
+            <div id="page-users" class="page-content hidden">
+                <div class="page-header">
+                    <h1 class="page-title" style="margin-bottom:0">User Management</h1>
+                    <span class="role-badge role-admin">Admin Only</span>
+                </div>
+
+                <div class="glass-card">
+                    <div class="table-wrapper">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Joined</th>
+                                    <th class="text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-tbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- ============ MODAL (shared) ============ -->
+    <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal(event)">
+        <div class="modal" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h3 id="modal-title">New Record</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="modal-body">
+                <!-- Dynamically injected -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

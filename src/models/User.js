@@ -20,12 +20,26 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Please provide a password'],
     minlength: 6,
-    select: false // Do not include password in queries by default
+    select: false
   },
   role: {
     type: String,
     enum: ['Viewer', 'Analyst', 'Admin'],
     default: 'Viewer'
+  },
+  companyCode: {
+    type: String,
+    required: [true, 'A company code is required'],
+    uppercase: true,
+    trim: true,
+    select: false,
+    default: 'DEFAULT'
+  },
+  companyName: {
+    type: String,
+    required: [true, 'A company name is required'],
+    trim: true,
+    default: 'Default Company'
   },
   isActive: {
     type: Boolean,
@@ -34,14 +48,14 @@ const userSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-// Hash the password before saving
-userSchema.pre('save', async function(next) {
-  // Only run this function if password was actually modified
-  if (!this.isModified('password')) return next();
+// Index for company-scoped queries
+userSchema.index({ companyName: 1 });
+userSchema.index({ companyName: 1, role: 1 });
 
-  // Hash the password with cost of 12
+// Hash the password before saving
+userSchema.pre('save', async function() {
+  if (!this.isModified('password')) return;
   this.password = await bcrypt.hash(this.password, 12);
-  next();
 });
 
 // Instance method to check password

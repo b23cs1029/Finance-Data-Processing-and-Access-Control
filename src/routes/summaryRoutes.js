@@ -9,5 +9,6 @@ router.use(authController.protect);
 
 // Viewers, Analysts, and Admins can all view dashboard summaries
 router.get('/', authController.restrictTo('Viewer', 'Analyst', 'Admin'), summaryController.getSummary);
+router.get('/trends', authController.restrictTo('Viewer', 'Analyst', 'Admin'), summaryController.getMonthlyTrends);
 
 module.exports = router;
