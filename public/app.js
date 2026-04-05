@@ -9,6 +9,8 @@ let currentPage = 'dashboard';
 let recordsPage = 1;
 let trendsChart = null;
 let categoryChart = null;
+let expenseTrendChart = null;
+let profitMarginsChart = null;
 let debounceTimer = null;
 let recordsCache = {}; // Store records for edit modal lookup
 
@@ -95,6 +97,8 @@ function logout() {
     // Destroy charts
     if (trendsChart) { trendsChart.destroy(); trendsChart = null; }
     if (categoryChart) { categoryChart.destroy(); categoryChart = null; }
+    if (expenseTrendChart) { expenseTrendChart.destroy(); expenseTrendChart = null; }
+    if (profitMarginsChart) { profitMarginsChart.destroy(); profitMarginsChart = null; }
 }
 
 // ============================================
@@ -208,17 +212,59 @@ const formatDate = (d) => new Date(d).toLocaleDateString('en-US', {
 });
 
 // ============================================
-// DASHBOARD PAGE
+// DASHBOARD PAGE (Role-Aware)
 // ============================================
 async function loadDashboard() {
+    const isViewer = currentUser.role === 'Viewer';
+
+    if (isViewer) {
+        // Show viewer dashboard, hide analyst dashboard
+        $('viewer-dashboard').classList.remove('hidden');
+        $('analyst-dashboard').classList.add('hidden');
+        await loadViewerDashboard();
+    } else {
+        // Show analyst dashboard, hide viewer dashboard
+        $('viewer-dashboard').classList.add('hidden');
+        $('analyst-dashboard').classList.remove('hidden');
+        await loadAnalystDashboard();
+    }
+}
+
+// ---- VIEWER: Simple 3-card dashboard ----
+async function loadViewerDashboard() {
     try {
-        const [summaryRes, trendsRes] = await Promise.all([
+        const summaryRes = await apiCall('/summary');
+        const data = summaryRes.data;
+
+        $('viewer-stat-income').innerText = formatMoney(data.totalIncome);
+        $('viewer-stat-expense').innerText = formatMoney(data.totalExpense);
+        $('viewer-stat-balance').innerText = formatMoney(data.netBalance);
+
+        // Color the balance based on positive/negative
+        const balEl = $('viewer-stat-balance');
+        if (data.netBalance >= 0) {
+            balEl.style.color = 'var(--success)';
+        } else {
+            balEl.style.color = 'var(--danger)';
+        }
+    } catch (err) {
+        console.error('Viewer dashboard error:', err);
+        showToast(err.message, 'error');
+    }
+}
+
+// ---- ANALYST / ADMIN: Full analytics dashboard ----
+async function loadAnalystDashboard() {
+    try {
+        const [summaryRes, trendsRes, analyticsRes] = await Promise.all([
             apiCall('/summary'),
-            apiCall('/summary/trends')
+            apiCall('/summary/trends'),
+            apiCall('/summary/analytics')
         ]);
 
         const data = summaryRes.data;
         const trends = trendsRes.data.trends;
+        const analytics = analyticsRes.data;
 
         // Update stat cards
         $('stat-income').innerText = formatMoney(data.totalIncome);
@@ -226,11 +272,12 @@ async function loadDashboard() {
         $('stat-balance').innerText = formatMoney(data.netBalance);
         $('stat-records').innerText = data.totalRecords;
 
-        // Render trends chart
+        // Render existing charts
         renderTrendsChart(trends);
-
-        // Render category chart
         renderCategoryChart(data.categories.expense);
+
+        // Render analytics
+        renderAnalytics(analytics);
 
         // Render recent activity
         renderRecentActivity(data.recentActivity);
@@ -241,6 +288,196 @@ async function loadDashboard() {
     }
 }
 
+// ============================================
+// ANALYTICS RENDERING
+// ============================================
+function renderAnalytics(analytics) {
+    const { monthly, meanTrend, statistics } = analytics;
+
+    // 1) Expense Trend + Mean overlay chart
+    renderExpenseTrendChart(monthly, meanTrend);
+
+    // 2) Profit & Margins chart
+    renderProfitMarginsChart(monthly);
+
+    // 3) Statistical insight cards
+    $('stat-variability').innerText = formatMoney(statistics.variability);
+    $('stat-median').innerText = formatMoney(statistics.median);
+    $('stat-mean').innerText = formatMoney(statistics.mean);
+    $('stat-mode').innerText = statistics.mode > 0 ? formatMoney(statistics.mode) : 'No mode';
+    $('stat-sample').innerText = statistics.sampleSize;
+
+    // Animate insight bars (relative to mean as baseline)
+    const maxVal = Math.max(statistics.mean, statistics.median, statistics.variability, statistics.mode || 0, 1);
+    animateBar('risk-bar-fill', statistics.variability, maxVal);
+    animateBar('median-bar-fill', statistics.median, maxVal);
+    animateBar('mean-bar-fill', statistics.mean, maxVal);
+    animateBar('mode-bar-fill', statistics.mode, maxVal);
+}
+
+function animateBar(id, value, maxVal) {
+    const el = $(id);
+    if (!el) return;
+    const pct = maxVal > 0 ? Math.min((value / maxVal) * 100, 100) : 0;
+    setTimeout(() => {
+        el.style.width = pct + '%';
+    }, 100);
+}
+
+function renderExpenseTrendChart(monthly, meanTrend) {
+    const ctx = $('expense-trend-chart');
+    if (expenseTrendChart) expenseTrendChart.destroy();
+
+    expenseTrendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: monthly.map(m => m.label),
+            datasets: [
+                {
+                    label: 'Monthly Expense',
+                    data: monthly.map(m => m.expense),
+                    borderColor: '#f43f5e',
+                    backgroundColor: 'rgba(244, 63, 94, 0.08)',
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 5,
+                    pointBackgroundColor: '#f43f5e',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    borderWidth: 2.5
+                },
+                {
+                    label: 'Mean Trend',
+                    data: meanTrend,
+                    borderColor: '#f59e0b',
+                    borderDash: [8, 4],
+                    backgroundColor: 'transparent',
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 3,
+                    pointBackgroundColor: '#f59e0b',
+                    borderWidth: 2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#8892b0', font: { family: 'Inter', size: 12 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => `${ctx.dataset.label}: $${ctx.parsed.y.toLocaleString()}`
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#5a6380', font: { family: 'Inter', size: 11 } },
+                    grid: { color: 'rgba(100,120,200,0.06)' }
+                },
+                y: {
+                    ticks: {
+                        color: '#5a6380',
+                        font: { family: 'Inter', size: 11 },
+                        callback: v => '$' + v.toLocaleString()
+                    },
+                    grid: { color: 'rgba(100,120,200,0.06)' }
+                }
+            }
+        }
+    });
+}
+
+function renderProfitMarginsChart(monthly) {
+    const ctx = $('profit-margins-chart');
+    if (profitMarginsChart) profitMarginsChart.destroy();
+
+    const profits = monthly.map(m => m.profit);
+    const barColors = profits.map(p => p >= 0 ? 'rgba(16, 185, 129, 0.7)' : 'rgba(244, 63, 94, 0.7)');
+    const borderColors = profits.map(p => p >= 0 ? '#10b981' : '#f43f5e');
+
+    profitMarginsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: monthly.map(m => m.label),
+            datasets: [
+                {
+                    label: 'Profit',
+                    data: profits,
+                    backgroundColor: barColors,
+                    borderColor: borderColors,
+                    borderWidth: 1.5,
+                    borderRadius: 6,
+                    barPercentage: 0.6
+                },
+                {
+                    label: 'Margin %',
+                    data: monthly.map(m => m.margin),
+                    type: 'line',
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'transparent',
+                    pointBackgroundColor: '#8b5cf6',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    tension: 0.4,
+                    borderWidth: 2,
+                    yAxisID: 'yMargin'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    labels: { color: '#8892b0', font: { family: 'Inter', size: 12 } }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: (ctx) => {
+                            if (ctx.dataset.yAxisID === 'yMargin') {
+                                return `Margin: ${ctx.parsed.y}%`;
+                            }
+                            return `Profit: $${ctx.parsed.y.toLocaleString()}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#5a6380', font: { family: 'Inter', size: 11 } },
+                    grid: { color: 'rgba(100,120,200,0.06)' }
+                },
+                y: {
+                    position: 'left',
+                    ticks: {
+                        color: '#5a6380',
+                        font: { family: 'Inter', size: 11 },
+                        callback: v => '$' + v.toLocaleString()
+                    },
+                    grid: { color: 'rgba(100,120,200,0.06)' }
+                },
+                yMargin: {
+                    position: 'right',
+                    ticks: {
+                        color: '#8b5cf6',
+                        font: { family: 'Inter', size: 11 },
+                        callback: v => v + '%'
+                    },
+                    grid: { display: false }
+                }
+            }
+        }
+    });
+}
+
+// ============================================
+// EXISTING CHARTS (Monthly Trends + Category)
+// ============================================
 function renderTrendsChart(trends) {
     const ctx = $('trends-chart');
     if (trendsChart) trendsChart.destroy();

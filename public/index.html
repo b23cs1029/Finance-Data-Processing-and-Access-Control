@@ -131,71 +131,189 @@
                     <span class="role-badge" id="header-role-badge">Admin</span>
                 </div>
 
-                <!-- Metric Cards -->
-                <div class="metrics-row">
-                    <div class="glass-card metric-card">
-                        <div class="metric-icon income">↑</div>
-                        <div class="metric-info">
-                            <p>Total Income</p>
-                            <h3 id="stat-income">$0.00</h3>
+                <!-- ===== VIEWER DASHBOARD (Simple 3-card layout) ===== -->
+                <div id="viewer-dashboard" class="hidden">
+                    <div class="viewer-metrics">
+                        <div class="glass-card viewer-metric-card viewer-income">
+                            <div class="viewer-metric-icon">
+                                <span>↑</span>
+                            </div>
+                            <div class="viewer-metric-body">
+                                <p class="viewer-metric-label">Total Income</p>
+                                <h2 id="viewer-stat-income" class="viewer-metric-value">$0.00</h2>
+                                <p class="viewer-metric-hint">All recorded income</p>
+                            </div>
+                        </div>
+                        <div class="glass-card viewer-metric-card viewer-expense">
+                            <div class="viewer-metric-icon">
+                                <span>↓</span>
+                            </div>
+                            <div class="viewer-metric-body">
+                                <p class="viewer-metric-label">Total Expenses</p>
+                                <h2 id="viewer-stat-expense" class="viewer-metric-value">$0.00</h2>
+                                <p class="viewer-metric-hint">All recorded expenses</p>
+                            </div>
+                        </div>
+                        <div class="glass-card viewer-metric-card viewer-balance">
+                            <div class="viewer-metric-icon">
+                                <span>⚖</span>
+                            </div>
+                            <div class="viewer-metric-body">
+                                <p class="viewer-metric-label">Net Balance</p>
+                                <h2 id="viewer-stat-balance" class="viewer-metric-value">$0.00</h2>
+                                <p class="viewer-metric-hint">Income minus expenses</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="glass-card metric-card">
-                        <div class="metric-icon expense">↓</div>
-                        <div class="metric-info">
-                            <p>Total Expenses</p>
-                            <h3 id="stat-expense">$0.00</h3>
-                        </div>
-                    </div>
-                    <div class="glass-card metric-card">
-                        <div class="metric-icon balance">⚖</div>
-                        <div class="metric-info">
-                            <p>Net Balance</p>
-                            <h3 id="stat-balance">$0.00</h3>
-                        </div>
-                    </div>
-                    <div class="glass-card metric-card">
-                        <div class="metric-icon records">📄</div>
-                        <div class="metric-info">
-                            <p>Total Records</p>
-                            <h3 id="stat-records">0</h3>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Charts -->
-                <div class="charts-row">
-                    <div class="glass-card chart-card">
-                        <h4>Monthly Trends (Last 6 Months)</h4>
-                        <div class="chart-container">
-                            <canvas id="trends-chart"></canvas>
-                        </div>
-                    </div>
-                    <div class="glass-card chart-card">
-                        <h4>Expense Categories</h4>
-                        <div class="chart-container">
-                            <canvas id="category-chart"></canvas>
-                        </div>
+                    <div class="glass-card viewer-footer-card">
+                        <div class="viewer-footer-icon">🔒</div>
+                        <p>You have <strong>Viewer</strong> access. Contact your admin for analytics and detailed reports.</p>
                     </div>
                 </div>
 
-                <!-- Recent Activity -->
-                <div class="glass-card activity-section">
-                    <h4>Recent Activity</h4>
-                    <div class="table-wrapper">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Type</th>
-                                    <th>Category</th>
-                                    <th>Notes</th>
-                                    <th class="text-right">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody id="activity-tbody">
-                            </tbody>
-                        </table>
+                <!-- ===== ANALYST / ADMIN DASHBOARD (Full analytics) ===== -->
+                <div id="analyst-dashboard">
+
+                    <!-- Metric Cards -->
+                    <div class="metrics-row">
+                        <div class="glass-card metric-card">
+                            <div class="metric-icon income">↑</div>
+                            <div class="metric-info">
+                                <p>Total Income</p>
+                                <h3 id="stat-income">$0.00</h3>
+                            </div>
+                        </div>
+                        <div class="glass-card metric-card">
+                            <div class="metric-icon expense">↓</div>
+                            <div class="metric-info">
+                                <p>Total Expenses</p>
+                                <h3 id="stat-expense">$0.00</h3>
+                            </div>
+                        </div>
+                        <div class="glass-card metric-card">
+                            <div class="metric-icon balance">⚖</div>
+                            <div class="metric-info">
+                                <p>Net Balance</p>
+                                <h3 id="stat-balance">$0.00</h3>
+                            </div>
+                        </div>
+                        <div class="glass-card metric-card">
+                            <div class="metric-icon records">📄</div>
+                            <div class="metric-info">
+                                <p>Total Records</p>
+                                <h3 id="stat-records">0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts -->
+                    <div class="charts-row">
+                        <div class="glass-card chart-card">
+                            <h4>Monthly Trends (Last 6 Months)</h4>
+                            <div class="chart-container">
+                                <canvas id="trends-chart"></canvas>
+                            </div>
+                        </div>
+                        <div class="glass-card chart-card">
+                            <h4>Expense Categories</h4>
+                            <div class="chart-container">
+                                <canvas id="category-chart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===== ANALYTICS INSIGHTS SECTION ===== -->
+                    <div class="analytics-section">
+                        <div class="analytics-header">
+                            <h2 class="analytics-title">
+                                <span class="analytics-icon">📈</span>
+                                Analytics Insights
+                            </h2>
+                            <p class="analytics-subtitle">Deep-dive into your financial metrics</p>
+                        </div>
+
+                        <!-- Analytics Charts Row -->
+                        <div class="analytics-charts-row">
+                            <div class="glass-card chart-card">
+                                <h4>📈 Expense Trend & Mean</h4>
+                                <p class="chart-subtitle">Monthly expense with rolling average overlay</p>
+                                <div class="chart-container">
+                                    <canvas id="expense-trend-chart"></canvas>
+                                </div>
+                            </div>
+                            <div class="glass-card chart-card">
+                                <h4>💰 Profit & Margins</h4>
+                                <p class="chart-subtitle">Monthly profit with margin percentages</p>
+                                <div class="chart-container">
+                                    <canvas id="profit-margins-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Statistical Insight Cards -->
+                        <div class="stats-insights-row">
+                            <div class="glass-card insight-card insight-risk">
+                                <div class="insight-badge">⚠️</div>
+                                <div class="insight-label">Variability (Risk)</div>
+                                <div class="insight-value" id="stat-variability">$0.00</div>
+                                <div class="insight-hint">Standard deviation of expenses</div>
+                                <div class="insight-bar">
+                                    <div class="insight-bar-fill risk-fill" id="risk-bar-fill"></div>
+                                </div>
+                            </div>
+                            <div class="glass-card insight-card insight-median">
+                                <div class="insight-badge">📊</div>
+                                <div class="insight-label">Median</div>
+                                <div class="insight-value" id="stat-median">$0.00</div>
+                                <div class="insight-hint">Reliable central average</div>
+                                <div class="insight-bar">
+                                    <div class="insight-bar-fill median-fill" id="median-bar-fill"></div>
+                                </div>
+                            </div>
+                            <div class="glass-card insight-card insight-mean">
+                                <div class="insight-badge">📐</div>
+                                <div class="insight-label">Mean</div>
+                                <div class="insight-value" id="stat-mean">$0.00</div>
+                                <div class="insight-hint">Arithmetic average</div>
+                                <div class="insight-bar">
+                                    <div class="insight-bar-fill mean-fill" id="mean-bar-fill"></div>
+                                </div>
+                            </div>
+                            <div class="glass-card insight-card insight-mode">
+                                <div class="insight-badge">🔁</div>
+                                <div class="insight-label">Mode</div>
+                                <div class="insight-value" id="stat-mode">$0.00</div>
+                                <div class="insight-hint">Most frequent expense</div>
+                                <div class="insight-bar">
+                                    <div class="insight-bar-fill mode-fill" id="mode-bar-fill"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sample size note -->
+                        <div class="analytics-note" id="analytics-note">
+                            Based on <strong id="stat-sample">0</strong> expense records
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="glass-card activity-section">
+                        <h4>Recent Activity</h4>
+                        <div class="table-wrapper">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Type</th>
+                                        <th>Category</th>
+                                        <th>Notes</th>
+                                        <th class="text-right">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="activity-tbody">
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
