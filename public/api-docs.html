@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zorvyn Finance — API Documentation</title>
+    <meta name="description" content="Complete REST API reference for the Zorvyn Finance Dashboard. Covers authentication, records CRUD, summaries, analytics, and user management.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #0b0e17; --surface: rgba(255,255,255,0.04); --surface-hover: rgba(255,255,255,0.07);
+            --border: rgba(255,255,255,0.08); --text: #e2e8f0; --text-muted: #8892a4;
+            --accent: #6366f1; --accent-glow: rgba(99,102,241,0.25);
+            --green: #22c55e; --green-bg: rgba(34,197,94,0.12); --green-border: rgba(34,197,94,0.3);
+            --blue: #3b82f6; --blue-bg: rgba(59,130,246,0.12); --blue-border: rgba(59,130,246,0.3);
+            --amber: #f59e0b; --amber-bg: rgba(245,158,11,0.12); --amber-border: rgba(245,158,11,0.3);
+            --red: #ef4444; --red-bg: rgba(239,68,68,0.12); --red-border: rgba(239,68,68,0.3);
+            --cyan: #06b6d4; --cyan-bg: rgba(6,182,212,0.12);
+            --radius: 12px; --mono: 'JetBrains Mono', monospace;
+        }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+        body::before { content:''; position:fixed; inset:0; background: radial-gradient(ellipse at 20% 0%, rgba(99,102,241,0.08) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(6,182,212,0.06) 0%, transparent 60%); pointer-events:none; z-index:0; }
+
+        /* Layout */
+        .layout { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+        .sidebar { width: 280px; position: fixed; top: 0; left: 0; height: 100vh; background: rgba(11,14,23,0.95); border-right: 1px solid var(--border); overflow-y: auto; padding: 24px 0; backdrop-filter: blur(20px); z-index: 10; }
+        .main { margin-left: 280px; flex: 1; padding: 40px 48px 80px; max-width: 900px; }
+
+        /* Sidebar */
+        .sidebar-brand { padding: 0 24px 24px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+        .sidebar-brand h1 { font-size: 20px; font-weight: 800; background: linear-gradient(135deg, #6366f1, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sidebar-brand p { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px; margin-top: 4px; }
+        .nav-group { margin-bottom: 8px; }
+        .nav-group-title { padding: 10px 24px 6px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+        .nav-link { display: flex; align-items: center; gap: 10px; padding: 8px 24px; font-size: 13px; color: var(--text-muted); text-decoration: none; transition: all 0.2s; border-left: 3px solid transparent; }
+        .nav-link:hover { color: var(--text); background: var(--surface-hover); }
+        .nav-link.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-glow); }
+        .method-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+        .method-dot.post { background: var(--green); } .method-dot.get { background: var(--blue); }
+        .method-dot.patch { background: var(--amber); } .method-dot.delete { background: var(--red); }
+        .back-link { display: inline-flex; align-items: center; gap: 6px; padding: 8px 24px 16px; font-size: 12px; color: var(--accent); text-decoration: none; }
+        .back-link:hover { text-decoration: underline; }
+
+        /* Hero */
+        .hero { margin-bottom: 48px; }
+        .hero h1 { font-size: 36px; font-weight: 800; background: linear-gradient(135deg, #e2e8f0, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .hero p { color: var(--text-muted); font-size: 16px; margin-top: 8px; max-width: 600px; }
+        .base-url-box { margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 20px; display: inline-flex; align-items: center; gap: 12px; }
+        .base-url-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 600; }
+        .base-url-value { font-family: var(--mono); font-size: 14px; color: var(--cyan); }
+
+        /* Section */
+        .section { margin-bottom: 56px; scroll-margin-top: 24px; }
+        .section-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+        .section-desc { color: var(--text-muted); font-size: 14px; margin-bottom: 24px; }
+
+        /* Endpoint Card */
+        .endpoint { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 20px; overflow: hidden; transition: border-color 0.3s; scroll-margin-top: 24px; }
+        .endpoint:hover { border-color: rgba(255,255,255,0.15); }
+        .endpoint-header { padding: 16px 20px; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
+        .method-badge { font-family: var(--mono); font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 6px; text-transform: uppercase; letter-spacing: 0.5px; flex-shrink: 0; }
+        .method-badge.get { background: var(--blue-bg); color: var(--blue); border: 1px solid var(--blue-border); }
+        .method-badge.post { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-border); }
+        .method-badge.patch { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-border); }
+        .method-badge.delete { background: var(--red-bg); color: var(--red); border: 1px solid var(--red-border); }
+        .endpoint-path { font-family: var(--mono); font-size: 14px; font-weight: 500; }
+        .endpoint-summary { font-size: 13px; color: var(--text-muted); margin-left: auto; }
+        .endpoint-toggle { margin-left: 8px; color: var(--text-muted); transition: transform 0.3s; font-size: 12px; }
+        .endpoint.open .endpoint-toggle { transform: rotate(180deg); }
+        .endpoint-body { display: none; padding: 0 20px 20px; border-top: 1px solid var(--border); }
+        .endpoint.open .endpoint-body { display: block; }
+
+        /* Detail elements */
+        .detail-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-muted); margin: 16px 0 8px; }
+        .role-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+        .role-tag { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 600; }
+        .role-tag.admin { background: rgba(239,68,68,0.15); color: #f87171; }
+        .role-tag.analyst { background: rgba(245,158,11,0.15); color: #fbbf24; }
+        .role-tag.viewer { background: rgba(34,197,94,0.15); color: #4ade80; }
+        .param-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+        .param-table th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); padding: 6px 8px; border-bottom: 1px solid var(--border); font-weight: 600; }
+        .param-table td { padding: 8px; font-size: 13px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        .param-table td:first-child { font-family: var(--mono); font-size: 12px; color: var(--cyan); white-space: nowrap; }
+        .param-table .required { color: var(--red); font-size: 10px; font-weight: 700; margin-left: 4px; }
+        .param-table .type { font-family: var(--mono); font-size: 11px; color: var(--accent); }
+        pre { background: rgba(0,0,0,0.4); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-family: var(--mono); font-size: 12px; line-height: 1.7; color: #a5b4c8; margin-bottom: 4px; }
+        pre .key { color: #7dd3fc; } pre .str { color: #86efac; } pre .num { color: #fbbf24; } pre .bool { color: #c084fc; }
+
+        /* Info boxes */
+        .info-box { padding: 12px 16px; border-radius: 8px; font-size: 13px; margin: 12px 0; display: flex; align-items: flex-start; gap: 10px; }
+        .info-box.note { background: var(--blue-bg); border: 1px solid var(--blue-border); color: var(--blue); }
+        .info-box.warn { background: var(--amber-bg); border: 1px solid var(--amber-border); color: var(--amber); }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar { display: none; }
+            .main { margin-left: 0; padding: 24px 16px 60px; }
+            .endpoint-summary { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-brand">
+                <h1>Zorvyn Finance</h1>
+                <p>API Reference v1</p>
+            </div>
+            <a href="/" class="back-link">← Back to Dashboard</a>
+            <div class="nav-group">
+                <div class="nav-group-title">Overview</div>
+                <a href="#overview" class="nav-link active">🚀 Getting Started</a>
+                <a href="#auth-info" class="nav-link">🔑 Authentication</a>
+                <a href="#roles" class="nav-link">🛡️ Roles & Permissions</a>
+            </div>
+            <div class="nav-group">
+                <div class="nav-group-title">Auth</div>
+                <a href="#post-register" class="nav-link"><span class="method-dot post"></span> Register</a>
+                <a href="#post-login" class="nav-link"><span class="method-dot post"></span> Login</a>
+            </div>
+            <div class="nav-group">
+                <div class="nav-group-title">Records</div>
+                <a href="#get-records" class="nav-link"><span class="method-dot get"></span> List Records</a>
+                <a href="#get-record" class="nav-link"><span class="method-dot get"></span> Get Record</a>
+                <a href="#post-record" class="nav-link"><span class="method-dot post"></span> Create Record</a>
+                <a href="#patch-record" class="nav-link"><span class="method-dot patch"></span> Update Record</a>
+                <a href="#delete-record" class="nav-link"><span class="method-dot delete"></span> Delete Record</a>
+            </div>
+            <div class="nav-group">
+                <div class="nav-group-title">Summary & Analytics</div>
+                <a href="#get-summary" class="nav-link"><span class="method-dot get"></span> Dashboard Summary</a>
+                <a href="#get-trends" class="nav-link"><span class="method-dot get"></span> Monthly Trends</a>
+                <a href="#get-analytics" class="nav-link"><span class="method-dot get"></span> Analytics</a>
+            </div>
+            <div class="nav-group">
+                <div class="nav-group-title">User Management</div>
+                <a href="#get-users" class="nav-link"><span class="method-dot get"></span> List Users</a>
+                <a href="#patch-role" class="nav-link"><span class="method-dot patch"></span> Update Role</a>
+                <a href="#patch-status" class="nav-link"><span class="method-dot patch"></span> Toggle Status</a>
+                <a href="#delete-user" class="nav-link"><span class="method-dot delete"></span> Delete User</a>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main">
+
+            <!-- Hero -->
+            <div class="hero" id="overview">
+                <h1>API Documentation</h1>
+                <p>Complete REST API reference for the Zorvyn Finance Dashboard — authentication, financial records, analytics, and user management.</p>
+                <div class="base-url-box">
+                    <span class="base-url-label">Base URL</span>
+                    <code class="base-url-value">http://localhost:5000/api/v1</code>
+                </div>
+            </div>
+
+            <!-- Auth Info -->
+            <div class="section" id="auth-info">
+                <h2 class="section-title">🔑 Authentication</h2>
+                <p class="section-desc">All protected endpoints require a JWT Bearer token. Obtain a token via the Login endpoint, then include it in every request header:</p>
+                <pre><span class="key">Authorization</span>: Bearer <span class="str">&lt;your_jwt_token&gt;</span></pre>
+                <div class="info-box note">ℹ️ Tokens expire after <strong>30 days</strong>. Re-authenticate to obtain a fresh token.</div>
+            </div>
+
+            <!-- Roles -->
+            <div class="section" id="roles">
+                <h2 class="section-title">🛡️ Roles & Permissions</h2>
+                <p class="section-desc">Access is scoped per-company. Users only see data belonging to their organization.</p>
+                <table class="param-table">
+                    <thead><tr><th>Role</th><th>Records</th><th>Summary</th><th>Analytics</th><th>Users</th></tr></thead>
+                    <tbody>
+                        <tr><td>Admin</td><td>Full CRUD</td><td>✅</td><td>✅</td><td>Full CRUD</td></tr>
+                        <tr><td>Analyst</td><td>Read only</td><td>✅</td><td>✅</td><td>❌</td></tr>
+                        <tr><td>Viewer</td><td>❌</td><td>Basic only</td><td>❌</td><td>❌</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- ========== AUTH ========== -->
+            <div class="section" id="section-auth">
+                <h2 class="section-title">Auth</h2>
+
+                <div class="endpoint open" id="post-register">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge post">POST</span>
+                        <span class="endpoint-path">/auth/register</span>
+                        <span class="endpoint-summary">Create a new account</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag viewer">Public</span></div>
+                        <div class="detail-title">Request Body</div>
+                        <table class="param-table">
+                            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td>name<span class="required">*</span></td><td><span class="type">string</span></td><td>Full name</td></tr>
+                                <tr><td>email<span class="required">*</span></td><td><span class="type">string</span></td><td>Valid email address</td></tr>
+                                <tr><td>password<span class="required">*</span></td><td><span class="type">string</span></td><td>Min 6 characters</td></tr>
+                                <tr><td>companyName<span class="required">*</span></td><td><span class="type">string</span></td><td>Organization name</td></tr>
+                                <tr><td>companyCode<span class="required">*</span></td><td><span class="type">string</span></td><td>Secret company code</td></tr>
+                                <tr><td>role</td><td><span class="type">string</span></td><td>Viewer | Analyst | Admin (default: Viewer)</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="detail-title">Response — 201</div>
+<pre>{
+  <span class="key">"status"</span>: <span class="str">"success"</span>,
+  <span class="key">"token"</span>: <span class="str">"eyJhbGciOiJIUzI1NiIs..."</span>,
+  <span class="key">"data"</span>: { <span class="key">"user"</span>: { <span class="key">"name"</span>: <span class="str">"John"</span>, <span class="key">"email"</span>: <span class="str">"john@co.com"</span>, <span class="key">"role"</span>: <span class="str">"Admin"</span> } }
+}</pre>
+                    </div>
+                </div>
+
+                <div class="endpoint" id="post-login">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge post">POST</span>
+                        <span class="endpoint-path">/auth/login</span>
+                        <span class="endpoint-summary">Sign in & get JWT</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Request Body</div>
+                        <table class="param-table">
+                            <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td>email<span class="required">*</span></td><td><span class="type">string</span></td><td>Registered email</td></tr>
+                                <tr><td>password<span class="required">*</span></td><td><span class="type">string</span></td><td>Account password</td></tr>
+                                <tr><td>companyName<span class="required">*</span></td><td><span class="type">string</span></td><td>Must match registration</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="detail-title">Response — 200</div>
+<pre>{
+  <span class="key">"status"</span>: <span class="str">"success"</span>,
+  <span class="key">"token"</span>: <span class="str">"eyJhbGciOiJIUzI1NiIs..."</span>,
+  <span class="key">"data"</span>: { <span class="key">"user"</span>: { ... } }
+}</pre>
+                        <div class="info-box warn">⚠️ Deactivated users receive a <strong>403</strong> error.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== RECORDS ========== -->
+            <div class="section" id="section-records">
+                <h2 class="section-title">Financial Records</h2>
+                <p class="section-desc">Company-scoped CRUD with filtering, sorting, and pagination. Deletion is soft-delete.</p>
+
+                <div class="endpoint" id="get-records">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge get">GET</span>
+                        <span class="endpoint-path">/records</span>
+                        <span class="endpoint-summary">List with filters & pagination</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span><span class="role-tag analyst">Analyst</span></div>
+                        <div class="detail-title">Query Parameters</div>
+                        <table class="param-table">
+                            <thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td>type</td><td><span class="type">string</span></td><td>income | expense</td></tr>
+                                <tr><td>category</td><td><span class="type">string</span></td><td>Regex search on category</td></tr>
+                                <tr><td>dateFrom</td><td><span class="type">date</span></td><td>Start date (ISO)</td></tr>
+                                <tr><td>dateTo</td><td><span class="type">date</span></td><td>End date (ISO)</td></tr>
+                                <tr><td>sort</td><td><span class="type">string</span></td><td>Field to sort, e.g. <code>-date</code> (default)</td></tr>
+                                <tr><td>page</td><td><span class="type">int</span></td><td>Page number (default: 1)</td></tr>
+                                <tr><td>limit</td><td><span class="type">int</span></td><td>Results per page (1–50, default: 10)</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="detail-title">Response — 200</div>
+<pre>{
+  <span class="key">"status"</span>: <span class="str">"success"</span>, <span class="key">"results"</span>: <span class="num">10</span>,
+  <span class="key">"data"</span>: {
+    <span class="key">"records"</span>: [ { <span class="key">"amount"</span>: <span class="num">5000</span>, <span class="key">"type"</span>: <span class="str">"income"</span>, ... } ],
+    <span class="key">"pagination"</span>: { <span class="key">"page"</span>: <span class="num">1</span>, <span class="key">"limit"</span>: <span class="num">10</span>, <span class="key">"total"</span>: <span class="num">42</span>, <span class="key">"totalPages"</span>: <span class="num">5</span> }
+  }
+}</pre>
+                    </div>
+                </div>
+
+                <div class="endpoint" id="get-record">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge get">GET</span>
+                        <span class="endpoint-path">/records/:id</span>
+                        <span class="endpoint-summary">Get single record</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span><span class="role-tag analyst">Analyst</span></div>
+                        <div class="detail-title">URL Parameters</div>
+                        <table class="param-table"><thead><tr><th>Param</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody><tr><td>id<span class="required">*</span></td><td><span class="type">ObjectId</span></td><td>MongoDB record ID</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="endpoint" id="post-record">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge post">POST</span>
+                        <span class="endpoint-path">/records</span>
+                        <span class="endpoint-summary">Create new record</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span></div>
+                        <div class="detail-title">Request Body</div>
+                        <table class="param-table"><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td>amount<span class="required">*</span></td><td><span class="type">number</span></td><td>Transaction amount</td></tr>
+                                <tr><td>type<span class="required">*</span></td><td><span class="type">string</span></td><td>income | expense</td></tr>
+                                <tr><td>category<span class="required">*</span></td><td><span class="type">string</span></td><td>e.g. Salary, Marketing</td></tr>
+                                <tr><td>date</td><td><span class="type">date</span></td><td>ISO date (default: now)</td></tr>
+                                <tr><td>notes</td><td><span class="type">string</span></td><td>Max 500 chars</td></tr>
+                            </tbody>
+                        </table>
+                        <div class="info-box note">ℹ️ <code>createdBy</code> and <code>companyName</code> are set automatically from the JWT.</div>
+                    </div>
+                </div>
+
+                <div class="endpoint" id="patch-record">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge patch">PATCH</span>
+                        <span class="endpoint-path">/records/:id</span>
+                        <span class="endpoint-summary">Update record</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span></div>
+                        <p style="font-size:13px;color:var(--text-muted);margin-top:8px">Allowed fields: <code>amount</code>, <code>type</code>, <code>category</code>, <code>date</code>, <code>notes</code></p>
+                    </div>
+                </div>
+
+                <div class="endpoint" id="delete-record">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge delete">DELETE</span>
+                        <span class="endpoint-path">/records/:id</span>
+                        <span class="endpoint-summary">Soft-delete record</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span></div>
+                        <div class="info-box warn">⚠️ This is a <strong>soft delete</strong> — the record is flagged as deleted but not removed from the database.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== SUMMARY ========== -->
+            <div class="section" id="section-summary">
+                <h2 class="section-title">Summary & Analytics</h2>
+
+                <div class="endpoint" id="get-summary">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge get">GET</span>
+                        <span class="endpoint-path">/summary</span>
+                        <span class="endpoint-summary">Dashboard totals</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span><span class="role-tag analyst">Analyst</span><span class="role-tag viewer">Viewer</span></div>
+                        <div class="info-box note">ℹ️ <strong>Viewers</strong> receive only <code>totalIncome</code>, <code>totalExpense</code>, <code>netBalance</code>. Analysts/Admins also get category breakdowns, record counts, and recent activity.</div>
+                    </div>
+                </div>
+
+                <div class="endpoint" id="get-trends">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge get">GET</span>
+                        <span class="endpoint-path">/summary/trends</span>
+                        <span class="endpoint-summary">6-month income/expense trends</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span><span class="role-tag analyst">Analyst</span></div>
+                        <div class="detail-title">Response — 200</div>
+<pre>{
+  <span class="key">"data"</span>: { <span class="key">"trends"</span>: [
+    { <span class="key">"label"</span>: <span class="str">"Nov 2025"</span>, <span class="key">"income"</span>: <span class="num">12000</span>, <span class="key">"expense"</span>: <span class="num">8500</span> }, ...
+  ]}
+}</pre>
+                    </div>
+                </div>
+
+                <div class="endpoint" id="get-analytics">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge get">GET</span>
+                        <span class="endpoint-path">/summary/analytics</span>
+                        <span class="endpoint-summary">Deep statistical insights</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span><span class="role-tag analyst">Analyst</span></div>
+                        <div class="detail-title">Response includes</div>
+                        <table class="param-table"><thead><tr><th>Field</th><th>Description</th></tr></thead>
+                            <tbody>
+                                <tr><td>monthly[]</td><td>6-month income, expense, profit, margin %</td></tr>
+                                <tr><td>meanTrend[]</td><td>Rolling average of expenses</td></tr>
+                                <tr><td>statistics.mean</td><td>Arithmetic average of all expenses</td></tr>
+                                <tr><td>statistics.median</td><td>Central tendency</td></tr>
+                                <tr><td>statistics.mode</td><td>Most frequent expense amount</td></tr>
+                                <tr><td>statistics.variability</td><td>Standard deviation (risk indicator)</td></tr>
+                                <tr><td>statistics.sampleSize</td><td>Number of expense records</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========== USERS ========== -->
+            <div class="section" id="section-users">
+                <h2 class="section-title">User Management</h2>
+                <p class="section-desc">Admin-only. All operations are scoped to the admin's company.</p>
+
+                <div class="endpoint" id="get-users">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge get">GET</span>
+                        <span class="endpoint-path">/users</span>
+                        <span class="endpoint-summary">List company users</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span></div>
+                    </div>
+                </div>
+
+                <div class="endpoint" id="patch-role">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge patch">PATCH</span>
+                        <span class="endpoint-path">/users/:id/role</span>
+                        <span class="endpoint-summary">Change user role</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span></div>
+                        <div class="detail-title">Request Body</div>
+                        <table class="param-table"><thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+                            <tbody><tr><td>role<span class="required">*</span></td><td><span class="type">string</span></td><td>Viewer | Analyst | Admin</td></tr></tbody>
+                        </table>
+                        <div class="info-box warn">⚠️ Admins cannot change their <strong>own</strong> role.</div>
+                    </div>
+                </div>
+
+                <div class="endpoint" id="patch-status">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge patch">PATCH</span>
+                        <span class="endpoint-path">/users/:id/status</span>
+                        <span class="endpoint-summary">Activate / Deactivate user</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span></div>
+                        <p style="font-size:13px;color:var(--text-muted);margin-top:8px">Toggles <code>isActive</code>. Deactivated users cannot log in.</p>
+                    </div>
+                </div>
+
+                <div class="endpoint" id="delete-user">
+                    <div class="endpoint-header" onclick="toggle(this)">
+                        <span class="method-badge delete">DELETE</span>
+                        <span class="endpoint-path">/users/:id</span>
+                        <span class="endpoint-summary">Permanently delete user</span>
+                        <span class="endpoint-toggle">▼</span>
+                    </div>
+                    <div class="endpoint-body">
+                        <div class="detail-title">Access</div>
+                        <div class="role-tags"><span class="role-tag admin">Admin</span></div>
+                        <div class="info-box warn">⚠️ This is a <strong>hard delete</strong>. The user record is permanently removed. Admins cannot delete themselves.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Error Codes -->
+            <div class="section" id="errors">
+                <h2 class="section-title">Error Responses</h2>
+                <table class="param-table">
+                    <thead><tr><th>Code</th><th>Meaning</th></tr></thead>
+                    <tbody>
+                        <tr><td>400</td><td>Validation error or malformed request</td></tr>
+                        <tr><td>401</td><td>Missing or invalid JWT token</td></tr>
+                        <tr><td>403</td><td>Insufficient role permissions / deactivated account</td></tr>
+                        <tr><td>404</td><td>Resource not found</td></tr>
+                        <tr><td>500</td><td>Internal server error</td></tr>
+                    </tbody>
+                </table>
+<pre>{
+  <span class="key">"status"</span>: <span class="str">"fail"</span>,
+  <span class="key">"message"</span>: <span class="str">"You do not have permission to perform this action"</span>
+}</pre>
+            </div>
+
+        </main>
+    </div>
+
+    <script>
+        function toggle(header) {
+            header.closest('.endpoint').classList.toggle('open');
+        }
+
+        // Active nav highlighting on scroll
+        const navLinks = document.querySelectorAll('.nav-link[href^="#"]');
+        const sections = [...document.querySelectorAll('[id]')];
+        window.addEventListener('scroll', () => {
+            const y = window.scrollY + 80;
+            let current = '';
+            sections.forEach(s => { if (s.offsetTop <= y) current = s.id; });
+            navLinks.forEach(l => {
+                l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+            });
+        });
+    </script>
+</body>
+</html>
